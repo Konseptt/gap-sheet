@@ -1,10 +1,11 @@
 """
 Gap finder: job posting vs resume — proxies to NVIDIA NIM chat completions.
-Secrets: NVIDIA_API_KEY, SECRET_KEY (recommended in production). No disk storage of uploads.
+Secrets: NVIDIA_API_KEY; SECRET_KEY (recommended; on Vercel a derived key is used if unset). No disk storage of uploads.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -31,6 +32,28 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+
+def _flask_secret_key() -> str:
+    """Session signing key: prefer SECRET_KEY env; on Vercel derive a stable per-deployment value."""
+    raw = (os.environ.get("SECRET_KEY") or "").strip()
+    if raw:
+        return raw
+    if os.environ.get("VERCEL") == "1":
+        # Same value for every instance in this deployment (required for signed cookies).
+        # Set SECRET_KEY in the dashboard to control rotation and avoid relying on deployment ids.
+        parts = [
+            os.environ.get("VERCEL_PROJECT_ID", ""),
+            os.environ.get("VERCEL_DEPLOYMENT_ID", ""),
+            os.environ.get("VERCEL_GIT_COMMIT_SHA", ""),
+        ]
+        if any(parts):
+            h = hashlib.sha256()
+            h.update(b"gap-sheet-flask-session-v1\x00")
+            h.update("|".join(parts).encode("utf-8"))
+            return h.hexdigest()
+    return secrets.token_hex(32)
+
+
 # Vercel: serve assets from public/static (CDN + Flask); see Vercel Flask docs.
 _STATIC = _ROOT / "public" / "static"
 app = Flask(__name__, static_folder=str(_STATIC), static_url_path="/static")
@@ -44,11 +67,6 @@ if os.environ.get("VERCEL") == "1":
         x_port=1,
         x_prefix=1,
     )
-    if not (os.environ.get("SECRET_KEY") or "").strip():
-        raise RuntimeError(
-            "Set SECRET_KEY in Vercel Project → Settings → Environment Variables "
-            "(stable random string). Sessions and CSRF require it across instances."
-        )
 
 MAX_PDF_BYTES = 5 * 1024 * 1024
 MAX_PDF_PAGES = 50
@@ -57,7 +75,7 @@ MAX_JOB_CHARS = 100_000
 MAX_RESUME_TEXT_CHARS = 100_000
 
 app.config["MAX_CONTENT_LENGTH"] = MAX_PDF_BYTES + 256 * 1024
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
+app.config["SECRET_KEY"] = _flask_secret_key()
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 _on_vercel = os.environ.get("VERCEL") == "1"

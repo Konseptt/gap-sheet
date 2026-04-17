@@ -25,11 +25,11 @@ Edit `.env` and set your secrets (see below). **Do not commit `.env`.**
 | Variable | Required | Notes |
 |----------|----------|--------|
 | `NVIDIA_API_KEY` | Yes (for analysis) | Used to call NVIDIA chat completions. |
-| `SECRET_KEY` | **Yes on Vercel** | Stable random string for sessions and CSRF. The app refuses to start on Vercel without it. Locally, a random key is generated if unset. |
+| `SECRET_KEY` | Recommended | Stable random string for sessions and CSRF. **If unset on Vercel**, the app derives a per-deployment key from Vercel system variables so all instances agree. Set this explicitly for rotation and predictable behavior across deploys. Locally, a random key is generated if unset. |
 | `FLASK_DEBUG` | No | Set to `1` **only** for local debugging. Never enable in production. |
 | `SESSION_COOKIE_SECURE` | No | On Vercel, secure cookies are enabled automatically when `VERCEL=1`. |
 
-On **Vercel**, set `NVIDIA_API_KEY` and `SECRET_KEY` under **Project → Settings → Environment Variables**. The platform typically sets `VERCEL`; you normally do not need to add it yourself.
+On **Vercel**, set `NVIDIA_API_KEY` under **Project → Settings → Environment Variables**. Add `SECRET_KEY` when you want a fixed key you control; otherwise the app still works using a derived deployment key.
 
 ## Run locally
 
