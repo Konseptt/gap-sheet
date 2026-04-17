@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token }}" />
+  <meta name="description" content="Career desk — job notice vs. résumé." />
+  <title>Career · The Gap Sheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,600;0,700;1,400&family=Lilita+One&family=Permanent+Marker&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/gap_sheet.css') }}" />
+</head>
+<body class="desk">
+  <div class="desk__noise" aria-hidden="true"></div>
+  <div class="blob blob--a" aria-hidden="true"></div>
+  <div class="blob blob--b" aria-hidden="true"></div>
+  <div class="blob blob--c" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="top-row">
+      <span class="sticker sticker--pink">career</span>
+      <span class="scribble" aria-hidden="true">~~~</span>
+      <p class="date-line">{{ dateline }}</p>
+    </div>
+
+    <header class="banner">
+      <h1 class="banner__title">Gap Sheet</h1>
+      <p class="banner__sub">the posting vs. your résumé · what’s missing</p>
+    </header>
+
+    <p class="blurb">
+      Dump the job text + your stuff below. PDF works too. No pep talk — just a messy-honest list of holes and words to fix.
+    </p>
+
+    {% if not has_nvidia_key %}
+    <div class="key-warning" role="status">
+      <strong>Hold up — no NVIDIA key.</strong>
+      Put <code>NVIDIA_API_KEY=…</code> in a <code>.env</code> file here (copy <code>.env.example</code>), or run <code>export NVIDIA_API_KEY=…</code> before <code>python3 app.py</code>.
+    </div>
+    {% endif %}
+
+    <div class="grid2">
+      <section class="panel panel--tilt-l">
+        <div class="tape tape--left" aria-hidden="true"></div>
+        <h2 class="panel__h"><span class="panel__tag">A</span> Their posting</h2>
+        <textarea id="job" name="job_posting" placeholder="Paste the whole thing…" autocomplete="off" spellcheck="true" rows="10"></textarea>
+      </section>
+      <section class="panel panel--tilt-r panel--yellow">
+        <div class="tape tape--right" aria-hidden="true"></div>
+        <h2 class="panel__h"><span class="panel__tag panel__tag--dark">B</span> Your résumé</h2>
+        <div class="resume-stack">
+          <label class="drop" id="dropzone" for="resume_pdf">
+            <input type="file" id="resume_pdf" name="resume_pdf" accept="application/pdf" />
+            <span class="drop__bang">pdf!</span>
+            <span class="drop__txt">slam it here or click · wins over the box this round</span>
+          </label>
+          <div class="pill hidden" id="file-chip" aria-live="polite">
+            <span class="pill__name" id="file-name"></span>
+            <button type="button" class="pill__x" id="clear-pdf" title="Remove PDF">×</button>
+          </div>
+          <textarea id="resume" name="resume" placeholder="…or type / paste plain text" autocomplete="off" spellcheck="true" rows="8"></textarea>
+        </div>
+      </section>
+    </div>
+
+    <div class="row-actions">
+      <button type="button" class="btn-go" id="run">do the thing</button>
+      <span class="btn-shadow" aria-hidden="true"></span>
+    </div>
+
+    <section class="results-board hidden" id="results" aria-live="polite">
+      <div class="results-board__bar">
+        <h2 class="results-board__h">okay here’s the damage</h2>
+        <span class="results-board__note">roughly worst → first</span>
+      </div>
+      <div id="error" class="alert hidden" role="alert"></div>
+      <div id="content" class="result-grid"></div>
+    </section>
+
+    <footer class="foot">
+      <span class="foot__wiggle">gap sheet ∞</span>
+      <span class="foot__hand">— not a chatbot —</span>
+    </footer>
+  </div>
+
+  <script>
+    window.__GAP_API_ANALYZE__ = {{ url_for('analyze') | tojson }};
+  </script>
+  <script src="{{ url_for('static', filename='js/gap_sheet.js') }}" defer></script>
+</body>
+</html>

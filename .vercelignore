@@ -1,0 +1,4 @@
+# Keep deploy bundle small; do not upload local secrets or dev-only scripts
+example_direct_call.py
+.env
+.env.*
