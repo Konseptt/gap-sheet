@@ -25,7 +25,7 @@ try:
 except ImportError:
     pass
 
-import requests
+from openai import OpenAI
 from flask import Flask, jsonify, render_template, request, session
 from pypdf import PdfReader
 from flask_limiter import Limiter
@@ -92,8 +92,7 @@ limiter = Limiter(
     default_limits=[],
 )
 
-INVOKE_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
-MODEL = "meta/llama-4-maverick-17b-128e-instruct"
+MODEL = "meta/llama-3.3-70b-instruct"
 
 
 def nvidia_api_key() -> str:
@@ -361,48 +360,27 @@ def analyze():
         f"{resume}\n"
     )
 
-    payload = {
-        "model": MODEL,
-        "messages": [
-            {"role": "system", "content": build_system_prompt()},
-            {"role": "user", "content": user_content},
-        ],
-        "max_tokens": 2048,
-        "temperature": 0.35,
-        "top_p": 0.9,
-        "frequency_penalty": 0.0,
-        "presence_penalty": 0.0,
-        "stream": False,
-    }
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-    }
+    client = OpenAI(
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key=api_key,
+        timeout=120,
+    )
 
     try:
-        resp = requests.post(INVOKE_URL, headers=headers, json=payload, timeout=120)
-    except requests.RequestException:
+        completion = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": build_system_prompt()},
+                {"role": "user", "content": user_content},
+            ],
+            temperature=0.2,
+            top_p=0.7,
+            max_tokens=1024,
+            stream=False,
+        )
+        raw = message_content(completion.choices[0].message.model_dump())
+    except Exception:
         return jsonify({"error": "Could not reach the model service."}), 502
-
-    if resp.status_code != 200:
-        # Do not forward upstream body (may contain internal error shapes).
-        return jsonify(
-            {"error": "Model request failed.", "detail": f"upstream HTTP {resp.status_code}"}
-        ), 502
-
-    try:
-        body = resp.json()
-        choice0 = (body.get("choices") or [None])[0]
-        if not isinstance(choice0, dict):
-            raise KeyError("choices[0]")
-        msg = choice0.get("message")
-        if not isinstance(msg, dict):
-            raise KeyError("message")
-        raw = message_content(msg)
-    except (KeyError, IndexError, TypeError):
-        return jsonify({"error": "Unexpected response from model."}), 502
 
     if not (raw or "").strip():
         return jsonify({"error": "Empty reply from model."}), 502
