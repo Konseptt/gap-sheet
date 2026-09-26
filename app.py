@@ -92,7 +92,7 @@ limiter = Limiter(
     default_limits=[],
 )
 
-MODEL = "meta/llama-3.3-70b-instruct"
+MODEL = "moonshotai/kimi-k3"
 
 
 def nvidia_api_key() -> str:
@@ -373,8 +373,8 @@ def analyze():
                 {"role": "system", "content": build_system_prompt()},
                 {"role": "user", "content": user_content},
             ],
-            temperature=0.2,
-            top_p=0.7,
+            temperature=1,
+            top_p=0.95,
             max_tokens=1024,
             stream=False,
         )

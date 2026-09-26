@@ -16,10 +16,10 @@ client = OpenAI(
     api_key=api_key,
 )
 completion = client.chat.completions.create(
-    model="meta/llama-3.3-70b-instruct",
+    model="moonshotai/kimi-k3",
     messages=[{"role": "user", "content": "Say hello in one short sentence."}],
-    temperature=0.2,
-    top_p=0.7,
+    temperature=1,
+    top_p=0.95,
     max_tokens=1024,
     stream=False,
 )
