@@ -197,8 +197,17 @@ def extract_json(text: str) -> dict[str, Any] | None:
     return None
 
 
+def _usable_reply(text: str) -> bool:
+    stripped = text.strip()
+    return bool(stripped) and not set(stripped) <= {"!"}
+
+
 def message_content(message: dict[str, Any]) -> str:
     raw = message.get("content")
+    reasoning = message.get("reasoning_content")
+    if isinstance(reasoning, str) and _usable_reply(reasoning):
+        if raw is None or (isinstance(raw, str) and not _usable_reply(raw)):
+            return reasoning
     if raw is None:
         return ""
     if isinstance(raw, str):
@@ -377,6 +386,7 @@ def analyze():
             top_p=0.95,
             max_tokens=1024,
             stream=False,
+            extra_body={"reasoning_effort": "low"},
         )
         raw = message_content(completion.choices[0].message.model_dump())
     except Exception:

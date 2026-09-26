@@ -22,5 +22,6 @@ completion = client.chat.completions.create(
     top_p=0.95,
     max_tokens=1024,
     stream=False,
+    extra_body={"reasoning_effort": "low"},
 )
 print(completion.choices[0].message)
